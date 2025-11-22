@@ -1,43 +1,46 @@
 pipeline {
     agent any
 
+    environment {
+        REPO = "https://github.com/Oussamaa02/cuda-soa-lab.git"
+        IMAGE = "gpu-service:${env.BUILD_NUMBER}"
+        STUDENT_PORT = "8127"
+    }
 
     stages {
 
-        stage('GPU Sanity Test') {
+        stage('Checkout') {
             steps {
-                echo 'Installing required dependencies for cuda_test'
-                // TODO: write here
-                echo 'Running CUDA sanity check...'
-                // TODO: write here
+                git url: env.REPO
             }
         }
 
-
-        stage('Build Docker Image') {
+        stage('Build Image') {
             steps {
-                // TODO: write here
-                echo "🐳 Building Docker image with GPU support..."
+                sh """
+                    docker build -t ${IMAGE} --build-arg STUDENT_PORT=${STUDENT_PORT} .
+                """
             }
         }
 
-        stage('Deploy Container') {
+        stage('Stop Old Container') {
             steps {
-                echo "🚀 Deploying Docker container..."
-                // TODO: write here
+                sh """
+                    docker rm -f gpu_service || true
+                """
             }
         }
-    }
 
-    post {
-        success {
-            echo "🎉 Deployment completed successfully!"
+        stage('Run New Container') {
+            steps {
+                sh """
+                    docker run -d --gpus all \
+                        --name gpu_service \
+                        -p ${STUDENT_PORT}:${STUDENT_PORT} \
+                        ${IMAGE}
+                """
+            }
         }
-        failure {
-            echo "💥 Deployment failed. Check logs for errors."
-        }
-        always {
-            echo "🧾 Pipeline finished."
-        }
+
     }
 }

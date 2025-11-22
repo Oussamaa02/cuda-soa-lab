@@ -1,0 +1,33 @@
+# app/gpu_kernel.py
+import numpy as np
+from numba import cuda
+
+# Kernel: C = A + B for float32
+@cuda.jit
+def matrix_add_kernel(A, B, C, rows, cols):
+    i, j = cuda.grid(2)
+    if i < rows and j < cols:
+        C[i, j] = A[i, j] + B[i, j]
+
+def gpu_matrix_add(a: np.ndarray, b: np.ndarray):
+    """
+    a, b: numpy arrays (float32)
+    returns: result numpy array (float32)
+    """
+    assert a.shape == b.shape, "shape mismatch"
+    rows, cols = a.shape
+
+    # device arrays
+    dA = cuda.to_device(a)
+    dB = cuda.to_device(b)
+    dC = cuda.device_array_like(dA)
+
+    # choose block and grid
+    threads_per_block = (16, 16)
+    grid_x = (rows + threads_per_block[0] - 1) // threads_per_block[0]
+    grid_y = (cols + threads_per_block[1] - 1) // threads_per_block[1]
+    blocks_per_grid = (grid_x, grid_y)
+
+    matrix_add_kernel[blocks_per_grid, threads_per_block](dA, dB, dC, rows, cols)
+
+    return dC.copy_to_host()
