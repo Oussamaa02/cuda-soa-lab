@@ -49,7 +49,7 @@ pipeline {
             steps {
                 sh """
                     docker run -d --gpus all \
-                        --name gpu_service \
+                        --name gpu_service_oussama\
                         -p ${STUDENT_PORT}:${STUDENT_PORT} \
                         ${IMAGE}
                 """
