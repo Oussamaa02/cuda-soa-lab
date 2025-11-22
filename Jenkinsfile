@@ -15,6 +15,20 @@ pipeline {
             }
         }
 
+        stage('List workspace') {
+            steps {
+                // Debug: show files and Dockerfile contents on the agent
+                sh '''
+                    echo "--- ls -la workspace ---"
+                    ls -la
+                    echo "--- stat Dockerfile ---"
+                    if [ -f Dockerfile ]; then stat -c "%n %s bytes (%a)" Dockerfile || true; else echo "Dockerfile not found"; fi
+                    echo "--- head of Dockerfile ---"
+                    if [ -f Dockerfile ]; then sed -n '1,200p' Dockerfile || true; else true; fi
+                '''
+            }
+        }
+
         stage('Build Image') {
             steps {
                 sh """
